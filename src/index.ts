@@ -130,31 +130,37 @@ function execProcess(
 }
 
 // @see https://www.terraform.io/docs/commands/init.html
-function terraformInit(terraformBin: string, repoPath: string) {
-  console.log('Terraform init starting...');
+function terraformInit(terraformBin: string, repoPath: string): Promise<unknown> {
   return Promise.resolve()
-    .then(() =>
-      execProcess({
-        cwd: repoPath,
-        command: terraformBin,
-        args: [
-          'init',
-          '-input=false',
-          '-lock=false', // since we won't be making any changes, it's not necessary to lock the state, and thus we can safely crash without leaving it locked
-          '-no-color',
-        ],
-      }),
-    )
-    .then(res => {
-      if (res.code || config.TERRAFORM_MONITOR_DEBUG) console.log(res.stdout + res.stderr);
-      if (res.code) throw new Error(`Terraform init failed (exit code ${res.code})`);
-      console.log(`Terraform init finished`);
-    });
+    .then(() => checkPathExists(`${repoPath}/.terraform`))
+    .then(
+      () => log('Terraform init already performed'),
+      () =>
+        Promise.resolve()
+          .then(() => log('Terraform init running...'))
+          .then(() =>
+            execProcess({
+              cwd: repoPath,
+              command: terraformBin,
+              args: [
+                'init',
+                '-input=false',
+                '-lock=false', // since we won't be making any changes, it's not necessary to lock the state, and thus we can safely crash without leaving it locked
+                '-no-color',
+              ],
+            }),
+          )
+          .then(res => {
+            if (res.code || config.TERRAFORM_MONITOR_DEBUG) console.log(res.stdout + res.stderr);
+            if (res.code) throw new Error(`Terraform init failed (exit code ${res.code})`);
+            console.log(`Terraform init finished`);
+          }),
+    );
 }
 
 // @see https://www.terraform.io/docs/commands/plan.html
 function terraformPlan(terraformBin: string, repoPath: string) {
-  console.log('Terraform plan starting...');
+  console.log('Terraform plan running...');
   return Promise.resolve()
     .then(() =>
       execProcess({
