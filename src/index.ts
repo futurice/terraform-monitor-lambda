@@ -9,17 +9,12 @@ declare var lambda: {
   handler: (event: object, context: object, callback: (error?: Error | null) => void) => void;
 };
 
-const s3 = new AWS.S3(); // @see https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html
-
-// If running outside of a Lambda (e.g. CLI node), invoke entrypoint on startup
-if (!process.env.AWS_LAMBDA_FUNCTION_NAME) main();
-
-// Register entrypoint as a Lambda handler
-lambda.handler = (_event, _context, callback) => {
-  main()
-    .then(res => log(res) || callback(null))
-    .catch(callback);
-};
+// Determine if we're running in a Lambda, or a regular-old CLI
+if (typeof lambda === 'undefined') {
+  main();
+} else {
+  lambda.handler = (_, __, callback) => main().then(callback, callback);
+}
 
 // Read config from environment and make it globally available
 const config = {
@@ -30,6 +25,9 @@ const config = {
   TERRAFORM_MONITOR_GITHUB_TOKEN: process.env.TERRAFORM_MONITOR_GITHUB_TOKEN || '',
 };
 
+// @see https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html
+const s3 = new AWS.S3();
+
 // Log to console; return null for convenient returns with an || expression
 function log(...args: any[]): null {
   console.log.apply(console.log, args);
@@ -37,7 +35,7 @@ function log(...args: any[]): null {
 }
 
 // Returns a Promise that resolves when the run is complete
-function main(): Promise<unknown> {
+function main(): Promise<null> {
   return Promise.resolve()
     .then(() => Promise.all([getTerraformVersion().then(installTerraform), getRepoHead().then(fetchRepo)]))
     .then(([terraformBin, repoPath]) =>
@@ -45,7 +43,8 @@ function main(): Promise<unknown> {
         .then(() => terraformInit(terraformBin, repoPath))
         .then(() => terraformPlan(terraformBin, repoPath)),
     )
-    .then(res => console.log('RESULT', res), err => console.log('ERROR', err));
+    .then(res => console.log('RESULT', res), err => console.log('ERROR', err))
+    .then(() => null);
 }
 
 // Gets the Terraform state from S3 and reports the exact version being used
