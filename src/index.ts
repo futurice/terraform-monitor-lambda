@@ -43,7 +43,7 @@ function main(): Promise<null> {
         .then(() => terraformInit(terraformBin, repoPath))
         .then(() => terraformPlan(terraformBin, repoPath)),
     )
-    .then(res => console.log('RESULT', res), err => console.log('ERROR', err))
+    .then(res => log('RESULT', res), err => log('ERROR', err))
     .then(() => null);
 }
 
@@ -81,8 +81,8 @@ function installTerraform(version: string): Promise<string> {
               file.on('close', resolve);
             })
               .then(() => execShell(`unzip -o ${zip} -d ${out}`))
-              .then(() => console.log(`Downloaded new Terraform binary: ${bin}`))
-          : console.log(`Using cached Terraform binary: ${bin}`),
+              .then(() => log(`Downloaded new Terraform binary: ${bin}`))
+          : log(`Using cached Terraform binary: ${bin}`),
     )
     .then(() => bin);
 }
@@ -151,16 +151,16 @@ function terraformInit(terraformBin: string, repoPath: string): Promise<unknown>
             }),
           )
           .then(res => {
-            if (res.code || config.TERRAFORM_MONITOR_DEBUG) console.log(res.stdout + res.stderr);
+            if (res.code || config.TERRAFORM_MONITOR_DEBUG) log(res.stdout + res.stderr);
             if (res.code) throw new Error(`Terraform init failed (exit code ${res.code})`);
-            console.log(`Terraform init finished`);
+            log(`Terraform init finished`);
           }),
     );
 }
 
 // @see https://www.terraform.io/docs/commands/plan.html
 function terraformPlan(terraformBin: string, repoPath: string) {
-  console.log('Terraform plan running...');
+  log('Terraform plan running...');
   return Promise.resolve()
     .then(() =>
       execProcess({
@@ -176,9 +176,9 @@ function terraformPlan(terraformBin: string, repoPath: string) {
       }),
     )
     .then(res => {
-      if (res.code === 1 || config.TERRAFORM_MONITOR_DEBUG) console.log(res.stdout + res.stderr);
+      if (res.code === 1 || config.TERRAFORM_MONITOR_DEBUG) log(res.stdout + res.stderr);
       if (res.code === 1) throw new Error(`Terraform plan failed (exit code ${res.code})`);
-      console.log(`Terraform plan finished`);
+      log(`Terraform plan finished`);
       return res;
     })
     .then(res => {
