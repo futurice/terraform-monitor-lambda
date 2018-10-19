@@ -13,7 +13,7 @@
     "lint-ts": "tsc --noEmit --project .",
     "lint-prettier": "prettier --list-different '**/*.ts'",
     "lint-fix": "prettier --write '**/*.ts'",
-    "build": "echo 'var lambda = exports;' > dist/index.js && browserify -p tsify --node src/index.ts >> dist/index.js && zip dist/lambda.zip dist/index.js"
+    "build": "echo 'var lambda = exports;' > dist/index.js && browserify -p tsify --node --external aws-sdk src/index.ts >> dist/index.js && zip dist/lambda.zip dist/index.js"
   },
   "repository": {
     "type": "git",
@@ -26,7 +26,9 @@
   },
   "homepage": "https://github.com/jareware/terraform-monitor-lambda#readme",
   "devDependencies": {
+    "@types/aws-sdk": "^2.7.0",
     "@types/node": "^10.12.0",
+    "aws-sdk": "^2.338.0",
     "browserify": "^16.2.3",
     "check-node-version": "^3.2.0",
     "prettier": "^1.14.3",
