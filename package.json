@@ -1,0 +1,19 @@
+{
+  "name": "terraform-monitor-lambda",
+  "version": "0.0.0",
+  "description": "Monitors a Terraform repository and reports on unapplied changes",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jareware/terraform-monitor-lambda.git"
+  },
+  "author": "Jarno Rantanen <jarno@jrw.fi>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jareware/terraform-monitor-lambda/issues"
+  },
+  "homepage": "https://github.com/jareware/terraform-monitor-lambda#readme"
+}
