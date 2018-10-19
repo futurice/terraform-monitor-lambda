@@ -2,9 +2,18 @@
   "name": "terraform-monitor-lambda",
   "version": "0.0.0",
   "description": "Monitors a Terraform repository and reports on unapplied changes",
+  "engines": {
+    "node": "8.10.0",
+    "npm": "5.6.0"
+  },
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "npm run lint-versions && npm run lint-ts && npm run lint-prettier && echo lint OK",
+    "lint-versions": "check-node-version --package",
+    "lint-ts": "tsc --noEmit --project .",
+    "lint-prettier": "prettier --list-different '**/*.ts'",
+    "lint-fix": "prettier --write '**/*.ts'",
+    "build": "echo 'var lambda = exports;' > dist/index.js && browserify -p tsify --node src/index.ts >> dist/index.js && zip dist/lambda.zip dist/index.js"
   },
   "repository": {
     "type": "git",
@@ -15,5 +24,14 @@
   "bugs": {
     "url": "https://github.com/jareware/terraform-monitor-lambda/issues"
   },
-  "homepage": "https://github.com/jareware/terraform-monitor-lambda#readme"
+  "homepage": "https://github.com/jareware/terraform-monitor-lambda#readme",
+  "devDependencies": {
+    "@types/node": "^10.12.0",
+    "browserify": "^16.2.3",
+    "check-node-version": "^3.2.0",
+    "prettier": "^1.14.3",
+    "ts-node": "^7.0.1",
+    "tsify": "^4.0.0",
+    "typescript": "^3.1.3"
+  }
 }
