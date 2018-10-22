@@ -37,7 +37,7 @@ enum TerraformStatus {
 // These are the metrics which are eventually collected from Terraform
 type TerraformMetrics = {
   terraformStatus: TerraformStatus;
-  refreshCount: number;
+  resourceCount: number;
   pendingAdd: number;
   pendingChange: number;
   pendingDestroy: number;
@@ -211,14 +211,14 @@ function terraformPlan(terraformBin: string, repoPath: string): Promise<Terrafor
       return res;
     })
     .then(res => {
-      let refreshCount = 0,
+      let resourceCount = 0,
         pendingAdd = 0,
         pendingChange = 0,
         pendingDestroy = 0;
       const refresh = / Refreshing state.../;
       const plan = /^Plan: (\d+) to add, (\d+) to change, (\d+) to destroy./;
       res.stdout.split('\n').forEach(line => {
-        if (line.match(refresh)) refreshCount++;
+        if (line.match(refresh)) resourceCount++;
         if (line.match(plan)) {
           const [, a, b, c] = line.match(plan);
           pendingAdd = parseInt(a, 10);
@@ -228,7 +228,7 @@ function terraformPlan(terraformBin: string, repoPath: string): Promise<Terrafor
       });
       return {
         terraformStatus: res.code,
-        refreshCount,
+        resourceCount,
         pendingAdd,
         pendingChange,
         pendingDestroy,
@@ -411,7 +411,7 @@ function getMetricsUnit(key: keyof TerraformMetrics): StandardUnit {
   switch (key) {
     case 'terraformStatus':
       return 'None';
-    case 'refreshCount':
+    case 'resourceCount':
     case 'pendingAdd':
     case 'pendingChange':
     case 'pendingDestroy':
