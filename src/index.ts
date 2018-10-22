@@ -18,12 +18,12 @@ if (typeof lambda === 'undefined') {
 
 // Read config from environment and make it globally available
 const config = {
-  TERRAFORM_MONITOR_DEBUG: !!process.env.TERRAFORM_MONITOR_DEBUG,
-  TERRAFORM_MONITOR_S3_BUCKET: process.env.TERRAFORM_MONITOR_S3_BUCKET || '',
-  TERRAFORM_MONITOR_S3_KEY: process.env.TERRAFORM_MONITOR_S3_KEY || '',
-  TERRAFORM_MONITOR_GITHUB_REPO: process.env.TERRAFORM_MONITOR_GITHUB_REPO || '',
-  TERRAFORM_MONITOR_GITHUB_TOKEN: process.env.TERRAFORM_MONITOR_GITHUB_TOKEN || '',
-  TERRAFORM_MONITOR_SCRATCH_SPACE: process.env.TERRAFORM_MONITOR_SCRATCH_SPACE || '/tmp', // @see https://aws.amazon.com/lambda/faqs/ "scratch space"
+  DEBUG: !!process.env.TERRAFORM_MONITOR_DEBUG,
+  S3_BUCKET: process.env.TERRAFORM_MONITOR_S3_BUCKET || '',
+  S3_KEY: process.env.TERRAFORM_MONITOR_S3_KEY || '',
+  GITHUB_REPO: process.env.TERRAFORM_MONITOR_GITHUB_REPO || '',
+  GITHUB_TOKEN: process.env.TERRAFORM_MONITOR_GITHUB_TOKEN || '',
+  SCRATCH_SPACE: process.env.TERRAFORM_MONITOR_SCRATCH_SPACE || '/tmp', // @see https://aws.amazon.com/lambda/faqs/ "scratch space"
 };
 
 // @see https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html
@@ -59,8 +59,8 @@ function main(): Promise<null> {
 function getTerraformVersion(): Promise<string> {
   return s3
     .getObject({
-      Bucket: config.TERRAFORM_MONITOR_S3_BUCKET,
-      Key: config.TERRAFORM_MONITOR_S3_KEY,
+      Bucket: config.S3_BUCKET,
+      Key: config.S3_KEY,
     })
     .promise()
     .then(data => JSON.parse(data.Body + '').terraform_version)
@@ -73,8 +73,8 @@ function getTerraformVersion(): Promise<string> {
 function installTerraform(version: string): Promise<string> {
   const file = `terraform_${version}_linux_amd64`;
   const url = `https://releases.hashicorp.com/terraform/${version}/${file}.zip`;
-  const zip = `${config.TERRAFORM_MONITOR_SCRATCH_SPACE}/${file}.zip`;
-  const out = `${config.TERRAFORM_MONITOR_SCRATCH_SPACE}/${file}`;
+  const zip = `${config.SCRATCH_SPACE}/${file}.zip`;
+  const out = `${config.SCRATCH_SPACE}/${file}`;
   const bin = `${out}/terraform`;
   return Promise.resolve()
     .then(() => new Promise(resolve => access(bin, resolve)))
@@ -158,7 +158,7 @@ function terraformInit(terraformBin: string, repoPath: string): Promise<unknown>
             }),
           )
           .then(res => {
-            if (res.code || config.TERRAFORM_MONITOR_DEBUG) log(res.stdout + res.stderr);
+            if (res.code || config.DEBUG) log(res.stdout + res.stderr);
             if (res.code) throw new Error(`Terraform init failed (exit code ${res.code})`);
             log(`Terraform init finished`);
           }),
@@ -183,7 +183,7 @@ function terraformPlan(terraformBin: string, repoPath: string) {
       }),
     )
     .then(res => {
-      if (res.code === 1 || config.TERRAFORM_MONITOR_DEBUG) log(res.stdout + res.stderr);
+      if (res.code === 1 || config.DEBUG) log(res.stdout + res.stderr);
       if (res.code === 1) throw new Error(`Terraform plan failed (exit code ${res.code})`);
       log(`Terraform plan finished`);
       return res;
@@ -222,9 +222,9 @@ function getRepoHead(branch = 'master'): Promise<string> {
     request(
       {
         hostname: 'api.github.com',
-        path: `/repos/${config.TERRAFORM_MONITOR_GITHUB_REPO}/branches/${branch}`,
+        path: `/repos/${config.GITHUB_REPO}/branches/${branch}`,
         headers: {
-          Authorization: `token ${config.TERRAFORM_MONITOR_GITHUB_TOKEN}`,
+          Authorization: `token ${config.GITHUB_TOKEN}`,
           'User-Agent': 'terraform_monitor', // @see https://developer.github.com/v3/#user-agent-required
         },
       },
@@ -245,35 +245,30 @@ function getRepoHead(branch = 'master'): Promise<string> {
       .end(),
   )
     .then((res: any) => res.commit.sha as string) // TODO: Cast "res" to unknown and inspect
-    .then(head => log(`Head for "${config.TERRAFORM_MONITOR_GITHUB_REPO}/${branch}" is "${head}"`) || head);
+    .then(head => log(`Head for "${config.GITHUB_REPO}/${branch}" is "${head}"`) || head);
 }
 
 // Promises the number of bytes of scratch space we're currently using (probably under /tmp)
 export function getScratchSpaceUsage(): Promise<number> {
   return Promise.resolve()
-    .then(() => execShell(`du --summarize --bytes ${config.TERRAFORM_MONITOR_SCRATCH_SPACE}`)) // e.g. "258828124         /tmp"
+    .then(() => execShell(`du --summarize --bytes ${config.SCRATCH_SPACE}`)) // e.g. "258828124         /tmp"
     .then(out => out.split('\t')) // "du" uses tabs as a delimiter
     .then(
       ([bytes]) =>
         isNaN(parseInt(bytes, 10))
-          ? Promise.reject<number>(
-              `Could not parse scratch space ${config.TERRAFORM_MONITOR_SCRATCH_SPACE} usage bytes from "${bytes}"`,
-            )
+          ? Promise.reject<number>(`Could not parse scratch space ${config.SCRATCH_SPACE} usage bytes from "${bytes}"`)
           : parseInt(bytes, 10),
     )
-    .then(
-      bytes =>
-        log(`Currently using ${bytes} bytes of scratch space under ${config.TERRAFORM_MONITOR_SCRATCH_SPACE}`) || bytes,
-    );
+    .then(bytes => log(`Currently using ${bytes} bytes of scratch space under ${config.SCRATCH_SPACE}`) || bytes);
 }
 
 // Fetches the repo, at the given commit, to the scratch space, if not already fetched.
 // Resolves with the path to the repo.
 // @example "/tmp/repo/john-doe-terraform-infra-7b5cbf69999c86555fd6086e8c5e2e233f673b69"
 function fetchRepo(repoHead: string): Promise<string> {
-  const zipPath = `${config.TERRAFORM_MONITOR_SCRATCH_SPACE}/repo.zip`;
-  const outPath = `${config.TERRAFORM_MONITOR_SCRATCH_SPACE}/repo`;
-  const expectedExtractedPath = `${outPath}/${config.TERRAFORM_MONITOR_GITHUB_REPO.replace('/', '-')}-${repoHead}`;
+  const zipPath = `${config.SCRATCH_SPACE}/repo.zip`;
+  const outPath = `${config.SCRATCH_SPACE}/repo`;
+  const expectedExtractedPath = `${outPath}/${config.GITHUB_REPO.replace('/', '-')}-${repoHead}`;
   return Promise.resolve(expectedExtractedPath)
     .then(checkPathExists)
     .then(
@@ -283,9 +278,9 @@ function fetchRepo(repoHead: string): Promise<string> {
           request(
             {
               hostname: 'api.github.com',
-              path: `/repos/${config.TERRAFORM_MONITOR_GITHUB_REPO}/zipball/${repoHead}`,
+              path: `/repos/${config.GITHUB_REPO}/zipball/${repoHead}`,
               headers: {
-                Authorization: `token ${config.TERRAFORM_MONITOR_GITHUB_TOKEN}`,
+                Authorization: `token ${config.GITHUB_TOKEN}`,
                 'User-Agent': 'terraform_monitor', // @see https://developer.github.com/v3/#user-agent-required
               },
             },
@@ -303,7 +298,7 @@ function fetchRepo(repoHead: string): Promise<string> {
                   hostname,
                   path,
                   headers: {
-                    Authorization: `token ${config.TERRAFORM_MONITOR_GITHUB_TOKEN}`,
+                    Authorization: `token ${config.GITHUB_TOKEN}`,
                     'User-Agent': 'terraform_monitor', // @see https://developer.github.com/v3/#user-agent-required
                   },
                 },
