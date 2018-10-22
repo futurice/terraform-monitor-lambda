@@ -26,6 +26,7 @@ const config = {
   GITHUB_REPO: process.env.TERRAFORM_MONITOR_GITHUB_REPO || '',
   GITHUB_TOKEN: process.env.TERRAFORM_MONITOR_GITHUB_TOKEN || '',
   SCRATCH_SPACE: process.env.TERRAFORM_MONITOR_SCRATCH_SPACE || '/tmp', // @see https://aws.amazon.com/lambda/faqs/ "scratch space"
+  CLOUDWATCH_NAMESPACE: process.env.TERRAFORM_MONITOR_CLOUDWATCH_NAMESPACE || '',
   INFLUXDB_URL: process.env.TERRAFORM_MONITOR_INFLUXDB_URL || '',
   INFLUXDB_DB: process.env.TERRAFORM_MONITOR_INFLUXDB_DB || '',
   INFLUXDB_AUTH: process.env.TERRAFORM_MONITOR_INFLUXDB_AUTH || '',
@@ -409,7 +410,7 @@ function shipMetricsToCloudWatch(metrics: TerraformMetrics) {
       Unit: getMetricsUnit(key),
       Value: metrics[key],
     })),
-    Namespace: 'TerraformMonitor',
+    Namespace: config.CLOUDWATCH_NAMESPACE,
   };
   return Promise.resolve()
     .then(() => log('Shipping metrics to CloudWatch...'))
