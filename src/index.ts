@@ -38,7 +38,13 @@ function log(...args: any[]): null {
 // Returns a Promise that resolves when the run is complete
 function main(): Promise<null> {
   return Promise.resolve()
-    .then(() => Promise.all([getTerraformVersion().then(installTerraform), getRepoHead().then(fetchRepo)]))
+    .then(() =>
+      Promise.all([
+        getTerraformVersion().then(installTerraform),
+        getRepoHead().then(fetchRepo),
+        getScratchSpaceUsage(),
+      ]),
+    )
     .then(([terraformBin, repoPath]) =>
       Promise.resolve()
         .then(() => terraformInit(terraformBin, repoPath))
@@ -240,6 +246,25 @@ function getRepoHead(branch = 'master'): Promise<string> {
   )
     .then((res: any) => res.commit.sha as string) // TODO: Cast "res" to unknown and inspect
     .then(head => log(`Head for "${config.TERRAFORM_MONITOR_GITHUB_REPO}/${branch}" is "${head}"`) || head);
+}
+
+// Promises the number of bytes of scratch space we're currently using (probably under /tmp)
+export function getScratchSpaceUsage(): Promise<number> {
+  return Promise.resolve()
+    .then(() => execShell(`du --summarize --bytes ${config.TERRAFORM_MONITOR_SCRATCH_SPACE}`)) // e.g. "258828124         /tmp"
+    .then(out => out.split('\t')) // "du" uses tabs as a delimiter
+    .then(
+      ([bytes]) =>
+        isNaN(parseInt(bytes, 10))
+          ? Promise.reject<number>(
+              `Could not parse scratch space ${config.TERRAFORM_MONITOR_SCRATCH_SPACE} usage bytes from "${bytes}"`,
+            )
+          : parseInt(bytes, 10),
+    )
+    .then(
+      bytes =>
+        log(`Currently using ${bytes} bytes of scratch space under ${config.TERRAFORM_MONITOR_SCRATCH_SPACE}`) || bytes,
+    );
 }
 
 // Fetches the repo, at the given commit, to the scratch space, if not already fetched.
