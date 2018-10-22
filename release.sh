@@ -5,10 +5,11 @@ PATH="$PATH:./node_modules/.bin" # allows us to run "npm binaries"
 
 WORK_DIR="dist"
 BUILD_ZIP="$WORK_DIR/lambda.zip" # note: this has to match what's in package.json
+OK="\033[1;32mOK\033[0m"
 
 echo -n "Checking for clean working copy... "
 git diff-index HEAD
-echo OK
+echo -e "$OK"
 
 echo -n "Parsing git remote... "
 github_raw="$(git config --get remote.origin.url | sed 's/.*://' | sed 's/\..*//')" # e.g. "git@github.com:user/project.git" => "user/project"
@@ -22,7 +23,7 @@ if [[ ! "$github_project" =~ ^[[:alnum:]-]+$ ]]; then
   echo -e "ERROR\n\nCan't seem to determine GitHub project name reliably: \"$github_project\""
   exit 1
 fi
-echo OK
+echo -e "$OK"
 
 echo -n "Verifying GitHub API access... "
 github_test="$(curl -s -n -o /dev/null -w "%{http_code}" https://api.github.com/user)"
@@ -32,15 +33,15 @@ if [ "$github_test" != "200" ]; then
   echo "* The resulting token is listed in your ~/.netrc file (under \"machine api.github.com\" and \"machine uploads.github.com\")"
   exit 1
 fi
-echo OK
+echo -e "$OK"
 
 echo -n "Running pre-release QA tasks... "
 npm run lint > /dev/null
-echo OK
+echo -e "$OK"
 
 echo -n "Building Lambda function... "
 npm run build > /dev/null
-echo OK
+echo -e "$OK"
 
 echo
 echo -n "This release is major/minor/patch: "
@@ -49,16 +50,16 @@ echo
 
 echo -n "Committing and tagging new release... "
 version_tag="$(npm version -m "Release %s" "$version_bump")"
-echo OK
+echo -e "$OK"
 
 echo -n "Pushing tag to GitHub... "
 git push --quiet origin "$version_tag"
-echo OK
+echo -e "$OK"
 
 release_zip="$github_project-$version_tag.zip"
 echo -n "Renaming release zipfile... "
 mv "$BUILD_ZIP" "$WORK_DIR/$release_zip"
-echo OK
+echo -e "$OK"
 
 echo -n "Creating release on GitHub... " # https://developer.github.com/v3/repos/releases/
 curl -o curl-out -s -n -X POST "https://api.github.com/repos/$github_user/$github_project/releases" --data "{\"tag_name\":\"$version_tag\"}"
@@ -69,7 +70,7 @@ if [[ ! "$release_upload_url" =~ ^https:// ]]; then
   cat curl-out
   exit 1
 fi
-echo OK
+echo -e "$OK"
 
 echo -n "Uploading release zipfile... "
 release_upload_result="$(curl -o /dev/null -w "%{http_code}" -s -n "$release_upload_url?name=$release_zip" --data-binary @"$WORK_DIR/$release_zip" -H "Content-Type: application/octet-stream")"
@@ -77,11 +78,11 @@ if [ "$release_upload_result" != "201" ]; then
   echo -e "ERROR\n\nRelease upload gave unexpected HTTP status: \"$release_upload_result\""
   exit 1
 fi
-echo OK
+echo -e "$OK"
 
 echo -n "Cleaning up... "
 rm curl-out
-echo OK
+echo -e "$OK"
 
 echo
 echo "New release: $release_html_url"
