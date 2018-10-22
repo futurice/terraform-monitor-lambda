@@ -407,9 +407,9 @@ function shipMetricsToCloudWatch(metrics: TerraformMetrics) {
     })),
     Namespace: 'TerraformMonitor',
   };
-  return cloudwatch
-    .putMetricData(data)
-    .promise()
+  return Promise.resolve()
+    .then(() => log('Shipping metrics to CloudWatch...'))
+    .then(() => cloudwatch.putMetricData(data).promise())
     .then(() => log(`Metrics shipped to CloudWatch`));
 }
 
