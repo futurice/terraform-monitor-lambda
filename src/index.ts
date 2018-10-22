@@ -58,7 +58,8 @@ function main(): Promise<null> {
     .then(([terraformBin, repoPath]) =>
       Promise.resolve()
         .then(() => terraformInit(terraformBin, repoPath))
-        .then(() => terraformPlan(terraformBin, repoPath)),
+        .then(() => terraformPlan(terraformBin, repoPath))
+        .then(processCollectedMetrics),
     )
     .then(res => log('RESULT', res), err => log('ERROR', err))
     .then(() => null);
@@ -337,5 +338,28 @@ function checkPathExists(path: string): Promise<string> {
       path,
       err => (err ? reject(new Error(`Expected path "${path}" doesn't exist or is not readable`)) : resolve(path)),
     ),
+  );
+}
+
+// @see https://stackoverflow.com/a/24398129
+function pad(input: string | number | boolean, padToLength: number, padLeft: boolean = false, padString = ' ') {
+  const pad = padString.repeat(padToLength + 1);
+  if (padLeft) {
+    return (pad + input).slice(-pad.length);
+  } else {
+    return (input + pad).substring(0, pad.length);
+  }
+}
+
+// Logs & ships the given metrics as appropriate
+function processCollectedMetrics(metrics: TerraformMetrics) {
+  const len = Object.keys(metrics)
+    .map(key => key.length)
+    .reduce((a, b) => Math.max(a, b), 0);
+  log(
+    'Collected metrics:\n' +
+      Object.keys(metrics)
+        .map(key => `  ${pad(key + ':', len)} ${pad((metrics as any)[key], 6, true)}`)
+        .join('\n'),
   );
 }
