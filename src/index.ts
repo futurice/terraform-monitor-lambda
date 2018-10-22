@@ -4,6 +4,7 @@ import { access, createWriteStream } from 'fs';
 import { get, request } from 'https';
 import { exec, spawn } from 'child_process';
 import { parse } from 'url';
+import { assert } from 'console';
 
 // Define the Lambda runtime environment (alias made during build process)
 declare var lambda: {
@@ -25,6 +26,10 @@ const config = {
   GITHUB_REPO: process.env.TERRAFORM_MONITOR_GITHUB_REPO || '',
   GITHUB_TOKEN: process.env.TERRAFORM_MONITOR_GITHUB_TOKEN || '',
   SCRATCH_SPACE: process.env.TERRAFORM_MONITOR_SCRATCH_SPACE || '/tmp', // @see https://aws.amazon.com/lambda/faqs/ "scratch space"
+  INFLUXDB_URL: process.env.TERRAFORM_MONITOR_INFLUXDB_URL || '',
+  INFLUXDB_DB: process.env.TERRAFORM_MONITOR_INFLUXDB_DB || '',
+  INFLUXDB_AUTH: process.env.TERRAFORM_MONITOR_INFLUXDB_AUTH || '',
+  INFLUXDB_MEASUREMENT: process.env.TERRAFORM_MONITOR_INFLUXDB_MEASUREMENT || '',
 };
 
 // @see https://www.terraform.io/docs/commands/plan.html#detailed-exitcode
@@ -437,4 +442,101 @@ function getMetricsUnit(key: keyof TerraformMetrics): StandardUnit {
     default:
       return assertExhausted(key);
   }
+}
+
+// @see https://docs.influxdata.com/influxdb/
+function shipMetricsToInfluxDb(metrics: TerraformMetrics) {
+  return Promise.resolve()
+    .then(() => log('Shipping metrics to InfluxDB...'))
+    .then(() =>
+      influxSend(
+        config.INFLUXDB_URL,
+        config.INFLUXDB_DB,
+        influxLine(config.INFLUXDB_MEASUREMENT, { gitHubRepo: config.GITHUB_REPO }, metrics),
+        config.INFLUXDB_AUTH,
+      ),
+    )
+    .then(() => log(`Metrics shipped to InfluxDB`));
+}
+
+// @see https://docs.influxdata.com/influxdb/v1.6/write_protocols/line_protocol_reference/
+// @example "weather,location=us-midwest temperature=82,bug_concentration=98 1465839830100000000"
+function influxLine(
+  measurement: string,
+  tags: { [tag: string]: string },
+  fields: { [field: string]: string | number | boolean },
+  timestampInMs?: number,
+): string {
+  assert(measurement, `Measurement name required, "${measurement}" given`);
+  assert(Object.keys(fields).length, 'At least 1 field required, 0 given');
+  const tagString: string = Object.keys(tags)
+    .map(tag => `${influxEscape(tag, 'TAG_KEY')}=${influxEscape(tags[tag], 'TAG_VALUE')}`)
+    .join(',');
+  const tagSeparator = Object.keys(tags).length ? ',' : '';
+  const fieldString: string = Object.keys(fields)
+    .map(field => `${influxEscape(field, 'FIELD_KEY')}=${influxEscape(fields[field], 'FIELD_VALUE')}`)
+    .join(',');
+  const timeString: string = timestampInMs ? ` ${timestampInMs * 1e6}` : ''; // convert from milliseconds to nanoseconds
+  return `${influxEscape(measurement, 'MEASUREMENT')}${tagSeparator}${tagString} ${fieldString}${timeString}`;
+}
+
+// @see https://docs.influxdata.com/influxdb/v1.6/write_protocols/line_protocol_tutorial/#special-characters-and-keywords
+function influxEscape(
+  input: string | number | boolean,
+  context: 'TAG_KEY' | 'TAG_VALUE' | 'FIELD_KEY' | 'MEASUREMENT' | 'FIELD_VALUE',
+): string {
+  switch (context) {
+    case 'MEASUREMENT':
+      return (input + '').replace(/,/g, '\\,').replace(/ /g, '\\ ');
+    case 'TAG_KEY':
+    case 'TAG_VALUE':
+    case 'FIELD_KEY':
+      return (input + '')
+        .replace(/,/g, '\\,')
+        .replace(/=/g, '\\=')
+        .replace(/ /g, '\\ ');
+    case 'FIELD_VALUE':
+      return typeof input === 'number' || typeof input === 'boolean'
+        ? input + ''
+        : input
+            .replace(/"/g, '\\"')
+            .replace(/^/, '"')
+            .replace(/$/, '"');
+    default:
+      return assertExhausted(context);
+  }
+}
+
+// @see https://github.com/jareware/heroku-metrics-to-influxdb/blob/master/src/influxdb.ts
+function influxSend(
+  dbUrl: string, // e.g. "https://my-influxdb.example.com/"
+  dbName: string, // e.g. "my_metrics_db"
+  lines: string | string[], // see influxLine()
+  auth?: string, // e.g. "user:pass"
+): Promise<string> {
+  const url = (dbUrl + '').replace(/\/*$/, '/write?db=' + dbName);
+  const data = typeof lines === 'string' ? lines : lines.join('\n');
+  const { protocol, port, hostname, path } = parse(url);
+  return new Promise((resolve, reject) => {
+    const req = request(
+      {
+        protocol,
+        port: port || undefined,
+        hostname,
+        method: 'POST',
+        path,
+        auth,
+      },
+      res => {
+        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+          resolve(data);
+        } else {
+          reject(new Error(`Unexpected response from InfluxDB: ${res.statusCode} "${res.statusMessage}"`));
+        }
+      },
+    );
+    req.on('error', reject);
+    req.write(data);
+    req.end();
+  });
 }
