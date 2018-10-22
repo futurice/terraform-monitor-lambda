@@ -1,4 +1,5 @@
-import * as AWS from 'aws-sdk'; // @see https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/
+import { S3, CloudWatch } from 'aws-sdk'; // @see https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/
+import { StandardUnit } from 'aws-sdk/clients/cloudwatch';
 import { access, createWriteStream } from 'fs';
 import { get, request } from 'https';
 import { exec, spawn } from 'child_process';
@@ -44,7 +45,10 @@ type TerraformMetrics = {
 };
 
 // @see https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html
-const s3 = new AWS.S3();
+const s3 = new S3();
+
+// @see https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/CloudWatch.html
+var cloudwatch = new CloudWatch();
 
 // Log to console; return null for convenient returns with an || expression
 function log(...args: any[]): null {
@@ -375,4 +379,45 @@ function processCollectedMetrics(metrics: TerraformMetrics) {
         .map(key => `  ${pad(key + ':', len)} ${pad(metrics[key], 6, true)}`)
         .join('\n'),
   );
+  return shipMetricsToCloudWatch(metrics);
+}
+
+// @see https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/CloudWatch.html#putMetricData-property
+function shipMetricsToCloudWatch(metrics: TerraformMetrics) {
+  const Dimensions = [{ Name: 'GitHubRepo', Value: config.GITHUB_REPO }];
+  const data: CloudWatch.Types.PutMetricDataInput = {
+    MetricData: keys(metrics).map(key => ({
+      MetricName: key,
+      Dimensions, // the same dimensions apply to all metrics
+      Unit: getMetricsUnit(key),
+      Value: metrics[key],
+    })),
+    Namespace: 'TerraformMonitor',
+  };
+  return cloudwatch
+    .putMetricData(data)
+    .promise()
+    .then(() => log(`Metrics shipped to CloudWatch`));
+}
+
+// Can be used to implement exhaustiveness checks in TS.
+// Returns "any" for convenience.
+export function assertExhausted(value: void): any {
+  throw new Error(`Runtime behaviour doesn't match type definitions (value was "${value}")`);
+}
+
+// Chooses the correct CloudWatch unit for the given metric
+function getMetricsUnit(key: keyof TerraformMetrics): StandardUnit {
+  switch (key) {
+    case 'terraformStatus':
+      return 'None';
+    case 'refreshCount':
+    case 'pendingAdd':
+    case 'pendingChange':
+    case 'pendingDestroy':
+    case 'pendingTotal':
+      return 'Count';
+    default:
+      return assertExhausted(key);
+  }
 }
