@@ -78,7 +78,7 @@ function main(): Promise<null> {
         .then(() => terraformInit(terraformBin, repoPath))
         .then(() => terraformPlan(terraformBin, repoPath))
         .then(metrics => ({ ...metrics, scratchSpaceBytes }))
-        .then(processCollectedMetrics),
+        .then(shipMetrics),
     )
     .catch(err => log('ERROR', err))
     .then(() => null);
@@ -378,10 +378,9 @@ function keys<T extends object>(object: T): (keyof T)[] {
   return Object.keys(object).filter(key => object.hasOwnProperty(key)) as any;
 }
 
-// Logs & ships the given metrics as appropriate
-function processCollectedMetrics(metrics: TerraformMetrics) {
-  shipMetricsToConsole(metrics);
-  return shipMetricsToCloudWatch(metrics);
+// Ships the given metrics as appropriate
+function shipMetrics(metrics: TerraformMetrics) {
+  return Promise.all([shipMetricsToConsole(metrics), shipMetricsToCloudWatch(metrics), shipMetricsToInfluxDb(metrics)]);
 }
 
 // Pretty-prints the given metrics to the console
