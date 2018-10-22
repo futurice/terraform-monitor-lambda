@@ -276,7 +276,7 @@ function getRepoHead(branch = 'master'): Promise<string> {
 }
 
 // Promises the number of bytes of scratch space we're currently using (probably under /tmp)
-export function getScratchSpaceUsage(): Promise<number> {
+function getScratchSpaceUsage(): Promise<number> {
   return Promise.resolve()
     .then(() => execShell(`du --summarize --bytes ${config.SCRATCH_SPACE}`)) // e.g. "258828124         /tmp"
     .then(out => out.split('\t')) // "du" uses tabs as a delimiter
@@ -369,7 +369,7 @@ function pad(input: string | number | boolean, padToLength: number, padLeft: boo
 
 // @see https://github.com/Microsoft/TypeScript/pull/12253#issuecomment-263132208
 // That is, this can behave strangely with strange objects. You have been warned.
-export function keys<T extends object>(object: T): (keyof T)[] {
+function keys<T extends object>(object: T): (keyof T)[] {
   return Object.keys(object).filter(key => object.hasOwnProperty(key)) as any;
 }
 
@@ -407,7 +407,7 @@ function shipMetricsToCloudWatch(metrics: TerraformMetrics) {
 
 // Can be used to implement exhaustiveness checks in TS.
 // Returns "any" for convenience.
-export function assertExhausted(value: void): any {
+function assertExhausted(value: void): any {
   throw new Error(`Runtime behaviour doesn't match type definitions (value was "${value}")`);
 }
 
