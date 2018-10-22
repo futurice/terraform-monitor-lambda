@@ -381,7 +381,11 @@ function keys<T extends object>(object: T): (keyof T)[] {
 
 // Ships the given metrics as appropriate
 function shipMetrics(metrics: TerraformMetrics) {
-  return Promise.all([shipMetricsToConsole(metrics), shipMetricsToCloudWatch(metrics), shipMetricsToInfluxDb(metrics)]);
+  return Promise.all([
+    shipMetricsToConsole(metrics),
+    config.CLOUDWATCH_NAMESPACE ? shipMetricsToCloudWatch(metrics) : Promise.resolve(),
+    config.INFLUXDB_URL ? shipMetricsToInfluxDb(metrics) : Promise.resolve(),
+  ]);
 }
 
 // Pretty-prints the given metrics to the console
