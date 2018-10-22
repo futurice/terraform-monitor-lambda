@@ -38,6 +38,7 @@ enum TerraformStatus {
 type TerraformMetrics = {
   terraformStatus: TerraformStatus;
   resourceCount: number;
+  refreshTime: number;
   pendingAdd: number;
   pendingChange: number;
   pendingDestroy: number;
@@ -190,6 +191,7 @@ function terraformInit(terraformBin: string, repoPath: string): Promise<unknown>
 // @see https://www.terraform.io/docs/commands/plan.html
 function terraformPlan(terraformBin: string, repoPath: string): Promise<TerraformMetrics> {
   log('Terraform plan running...');
+  const then = Date.now();
   return Promise.resolve()
     .then(() =>
       execProcess({
@@ -229,6 +231,7 @@ function terraformPlan(terraformBin: string, repoPath: string): Promise<Terrafor
       return {
         terraformStatus: res.code,
         resourceCount,
+        refreshTime: Date.now() - then,
         pendingAdd,
         pendingChange,
         pendingDestroy,
@@ -417,6 +420,8 @@ function getMetricsUnit(key: keyof TerraformMetrics): StandardUnit {
     case 'pendingDestroy':
     case 'pendingTotal':
       return 'Count';
+    case 'refreshTime':
+      return 'Milliseconds';
     default:
       return assertExhausted(key);
   }
