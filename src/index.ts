@@ -23,6 +23,7 @@ const config = {
   TERRAFORM_MONITOR_S3_KEY: process.env.TERRAFORM_MONITOR_S3_KEY || '',
   TERRAFORM_MONITOR_GITHUB_REPO: process.env.TERRAFORM_MONITOR_GITHUB_REPO || '',
   TERRAFORM_MONITOR_GITHUB_TOKEN: process.env.TERRAFORM_MONITOR_GITHUB_TOKEN || '',
+  TERRAFORM_MONITOR_SCRATCH_SPACE: process.env.TERRAFORM_MONITOR_SCRATCH_SPACE || '/tmp', // @see https://aws.amazon.com/lambda/faqs/ "scratch space"
 };
 
 // @see https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html
@@ -66,8 +67,8 @@ function getTerraformVersion(): Promise<string> {
 function installTerraform(version: string): Promise<string> {
   const file = `terraform_${version}_linux_amd64`;
   const url = `https://releases.hashicorp.com/terraform/${version}/${file}.zip`;
-  const zip = `/tmp/${file}.zip`; // @see https://aws.amazon.com/lambda/faqs/ "scratch space"
-  const out = `/tmp/${file}`;
+  const zip = `${config.TERRAFORM_MONITOR_SCRATCH_SPACE}/${file}.zip`;
+  const out = `${config.TERRAFORM_MONITOR_SCRATCH_SPACE}/${file}`;
   const bin = `${out}/terraform`;
   return Promise.resolve()
     .then(() => new Promise(resolve => access(bin, resolve)))
@@ -245,8 +246,8 @@ function getRepoHead(branch = 'master'): Promise<string> {
 // Resolves with the path to the repo.
 // @example "/tmp/repo/john-doe-terraform-infra-7b5cbf69999c86555fd6086e8c5e2e233f673b69"
 function fetchRepo(repoHead: string): Promise<string> {
-  const zipPath = '/tmp/repo.zip';
-  const outPath = '/tmp/repo';
+  const zipPath = `${config.TERRAFORM_MONITOR_SCRATCH_SPACE}/repo.zip`;
+  const outPath = `${config.TERRAFORM_MONITOR_SCRATCH_SPACE}/repo`;
   const expectedExtractedPath = `${outPath}/${config.TERRAFORM_MONITOR_GITHUB_REPO.replace('/', '-')}-${repoHead}`;
   return Promise.resolve(expectedExtractedPath)
     .then(checkPathExists)
