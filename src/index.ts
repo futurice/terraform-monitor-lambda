@@ -39,6 +39,7 @@ type TerraformMetrics = {
   terraformStatus: TerraformStatus;
   resourceCount: number;
   refreshTime: number;
+  scratchSpaceBytes: number;
   pendingAdd: number;
   pendingChange: number;
   pendingDestroy: number;
@@ -67,10 +68,11 @@ function main(): Promise<null> {
         getScratchSpaceUsage(),
       ]),
     )
-    .then(([terraformBin, repoPath]) =>
+    .then(([terraformBin, repoPath, scratchSpaceBytes]) =>
       Promise.resolve()
         .then(() => terraformInit(terraformBin, repoPath))
         .then(() => terraformPlan(terraformBin, repoPath))
+        .then(metrics => ({ ...metrics, scratchSpaceBytes }))
         .then(processCollectedMetrics),
     )
     .then(res => log('RESULT', res), err => log('ERROR', err))
@@ -189,7 +191,7 @@ function terraformInit(terraformBin: string, repoPath: string): Promise<unknown>
 }
 
 // @see https://www.terraform.io/docs/commands/plan.html
-function terraformPlan(terraformBin: string, repoPath: string): Promise<TerraformMetrics> {
+function terraformPlan(terraformBin: string, repoPath: string) {
   log('Terraform plan running...');
   const then = Date.now();
   return Promise.resolve()
@@ -422,6 +424,8 @@ function getMetricsUnit(key: keyof TerraformMetrics): StandardUnit {
       return 'Count';
     case 'refreshTime':
       return 'Milliseconds';
+    case 'scratchSpaceBytes':
+      return 'Bytes';
     default:
       return assertExhausted(key);
   }
