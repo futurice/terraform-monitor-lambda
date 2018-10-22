@@ -75,7 +75,7 @@ function main(): Promise<null> {
         .then(metrics => ({ ...metrics, scratchSpaceBytes }))
         .then(processCollectedMetrics),
     )
-    .then(res => log('RESULT', res), err => log('ERROR', err))
+    .catch(err => log('ERROR', err))
     .then(() => null);
 }
 
