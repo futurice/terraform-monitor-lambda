@@ -26,6 +26,16 @@ const config = {
   SCRATCH_SPACE: process.env.TERRAFORM_MONITOR_SCRATCH_SPACE || '/tmp', // @see https://aws.amazon.com/lambda/faqs/ "scratch space"
 };
 
+// These are the metrics which are eventually collected from Terraform
+type TerraformMetrics = {
+  refreshCount: number;
+  isUpToDate: boolean;
+  pendingAdd: number;
+  pendingChange: number;
+  pendingDestroy: number;
+  pendingTotal: number;
+};
+
 // @see https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html
 const s3 = new AWS.S3();
 
@@ -166,7 +176,7 @@ function terraformInit(terraformBin: string, repoPath: string): Promise<unknown>
 }
 
 // @see https://www.terraform.io/docs/commands/plan.html
-function terraformPlan(terraformBin: string, repoPath: string) {
+function terraformPlan(terraformBin: string, repoPath: string): Promise<TerraformMetrics> {
   log('Terraform plan running...');
   return Promise.resolve()
     .then(() =>
