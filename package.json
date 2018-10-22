@@ -13,7 +13,7 @@
     "lint-ts": "tsc --noEmit --project .",
     "lint-prettier": "prettier --list-different '**/*.ts'",
     "lint-fix": "prettier --write '**/*.ts'",
-    "build": "echo 'var lambda = exports;' > dist/index.js && browserify -p tsify --node --external aws-sdk src/index.ts >> dist/index.js && zip dist/lambda.zip dist/index.js"
+    "build": "echo 'var lambda = exports;' > dist/index.js && browserify -p tsify --node --external aws-sdk src/index.ts >> dist/index.js && (cd dist && zip lambda.zip index.js)"
   },
   "repository": {
     "type": "git",
