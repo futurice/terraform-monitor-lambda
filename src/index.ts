@@ -375,13 +375,16 @@ function keys<T extends object>(object: T): (keyof T)[] {
 
 // Logs & ships the given metrics as appropriate
 function processCollectedMetrics(metrics: TerraformMetrics) {
-  const len = Object.keys(metrics)
+  const maxKeyLen = keys(metrics)
     .map(key => key.length)
+    .reduce((a, b) => Math.max(a, b), 0);
+  const maxValLen = keys(metrics)
+    .map(key => (metrics[key] + '').length)
     .reduce((a, b) => Math.max(a, b), 0);
   log(
     'Collected metrics:\n' +
       keys(metrics)
-        .map(key => `  ${pad(key + ':', len)} ${pad(metrics[key], 6, true)}`)
+        .map(key => `  ${pad(key + ':', maxKeyLen)} ${pad(metrics[key], maxValLen, true)}`)
         .join('\n'),
   );
   return shipMetricsToCloudWatch(metrics);
