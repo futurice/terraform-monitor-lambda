@@ -26,10 +26,17 @@ const config = {
   SCRATCH_SPACE: process.env.TERRAFORM_MONITOR_SCRATCH_SPACE || '/tmp', // @see https://aws.amazon.com/lambda/faqs/ "scratch space"
 };
 
+// @see https://www.terraform.io/docs/commands/plan.html#detailed-exitcode
+enum TerraformStatus {
+  CLEAN = 0, // Succeeded with empty diff (no changes)
+  ERROR = 1, // Error
+  DIRTY = 2, // Succeeded with non-empty diff (changes present)
+}
+
 // These are the metrics which are eventually collected from Terraform
 type TerraformMetrics = {
+  terraformStatus: TerraformStatus;
   refreshCount: number;
-  isUpToDate: boolean;
   pendingAdd: number;
   pendingChange: number;
   pendingDestroy: number;
@@ -216,8 +223,8 @@ function terraformPlan(terraformBin: string, repoPath: string): Promise<Terrafor
         }
       });
       return {
+        terraformStatus: res.code,
         refreshCount,
-        isUpToDate: res.code === 0, // i.e. Terraform thinks the diff is clean
         pendingAdd,
         pendingChange,
         pendingDestroy,
