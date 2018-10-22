@@ -3,6 +3,9 @@
 set -e # exit on error
 PATH="$PATH:./node_modules/.bin" # allows us to run "npm binaries"
 
+WORK_DIR="dist"
+BUILD_ZIP="$WORK_DIR/lambda.zip" # note: this has to match what's in package.json
+
 echo -n "Checking for clean working copy... "
 git diff-index HEAD
 echo OK
@@ -33,12 +36,10 @@ echo OK
 
 echo -n "Running pre-release QA tasks... "
 npm run lint > /dev/null
-npm run test > /dev/null
 echo OK
 
 echo -n "Building Lambda function... "
-echo 'var lambda = exports;' > index.js
-browserify -p tsify --node index.ts >> index.js
+npm run build > /dev/null
 echo OK
 
 echo
@@ -54,9 +55,9 @@ echo -n "Pushing tag to GitHub... "
 git push --quiet origin "$version_tag"
 echo OK
 
-release_zipfile="$github_project-$version_tag.zip"
-echo -n "Compressing Lambda function... "
-zip "$release_zipfile" index.js > /dev/null
+release_zip="$github_project-$version_tag.zip"
+echo -n "Renaming release zipfile... "
+mv "$BUILD_ZIP" "$WORK_DIR/$release_zip"
 echo OK
 
 echo -n "Creating release on GitHub... " # https://developer.github.com/v3/repos/releases/
@@ -71,7 +72,7 @@ fi
 echo OK
 
 echo -n "Uploading release zipfile... "
-release_upload_result="$(curl -o /dev/null -w "%{http_code}" -s -n "$release_upload_url?name=$release_zipfile" --data-binary @"$release_zipfile" -H "Content-Type: application/octet-stream")"
+release_upload_result="$(curl -o /dev/null -w "%{http_code}" -s -n "$release_upload_url?name=$release_zip" --data-binary @"$WORK_DIR/$release_zip" -H "Content-Type: application/octet-stream")"
 if [ "$release_upload_result" != "201" ]; then
   echo -e "ERROR\n\nRelease upload gave unexpected HTTP status: \"$release_upload_result\""
   exit 1
@@ -79,7 +80,7 @@ fi
 echo OK
 
 echo -n "Cleaning up... "
-rm curl-out "$release_zipfile" index.js
+rm curl-out
 echo OK
 
 echo
