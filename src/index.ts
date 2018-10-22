@@ -375,6 +375,12 @@ function keys<T extends object>(object: T): (keyof T)[] {
 
 // Logs & ships the given metrics as appropriate
 function processCollectedMetrics(metrics: TerraformMetrics) {
+  shipMetricsToConsole(metrics);
+  return shipMetricsToCloudWatch(metrics);
+}
+
+// Pretty-prints the given metrics to the console
+function shipMetricsToConsole(metrics: TerraformMetrics): void {
   const maxKeyLen = keys(metrics)
     .map(key => key.length)
     .reduce((a, b) => Math.max(a, b), 0);
@@ -384,10 +390,9 @@ function processCollectedMetrics(metrics: TerraformMetrics) {
   log(
     'Collected metrics:\n' +
       keys(metrics)
-        .map(key => `  ${pad(key + ':', maxKeyLen)} ${pad(metrics[key], maxValLen, true)}`)
+        .map(key => `  ${pad(key + ':', maxKeyLen)} ${pad(metrics[key], maxValLen - 1, true)}`)
         .join('\n'),
   );
-  return shipMetricsToCloudWatch(metrics);
 }
 
 // @see https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/CloudWatch.html#putMetricData-property
