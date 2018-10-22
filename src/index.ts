@@ -351,6 +351,12 @@ function pad(input: string | number | boolean, padToLength: number, padLeft: boo
   }
 }
 
+// @see https://github.com/Microsoft/TypeScript/pull/12253#issuecomment-263132208
+// That is, this can behave strangely with strange objects. You have been warned.
+export function keys<T extends object>(object: T): (keyof T)[] {
+  return Object.keys(object).filter(key => object.hasOwnProperty(key)) as any;
+}
+
 // Logs & ships the given metrics as appropriate
 function processCollectedMetrics(metrics: TerraformMetrics) {
   const len = Object.keys(metrics)
@@ -358,8 +364,8 @@ function processCollectedMetrics(metrics: TerraformMetrics) {
     .reduce((a, b) => Math.max(a, b), 0);
   log(
     'Collected metrics:\n' +
-      Object.keys(metrics)
-        .map(key => `  ${pad(key + ':', len)} ${pad((metrics as any)[key], 6, true)}`)
+      keys(metrics)
+        .map(key => `  ${pad(key + ':', len)} ${pad(metrics[key], 6, true)}`)
         .join('\n'),
   );
 }
