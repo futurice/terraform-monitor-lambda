@@ -45,6 +45,7 @@ type TerraformMetrics = {
   terraformStatus: TerraformStatus;
   resourceCount: number;
   refreshTime: number;
+  totalTime: number;
   scratchSpaceBytes: number;
   pendingAdd: number;
   pendingChange: number;
@@ -66,6 +67,7 @@ function log(...args: any[]): null {
 
 // Returns a Promise that resolves when the run is complete
 function main(): Promise<null> {
+  let then = Date.now();
   return Promise.resolve()
     .then(() =>
       Promise.all([
@@ -78,7 +80,7 @@ function main(): Promise<null> {
       Promise.resolve()
         .then(() => terraformInit(terraformBin, repoPath))
         .then(() => terraformPlan(terraformBin, repoPath))
-        .then(metrics => ({ ...metrics, scratchSpaceBytes }))
+        .then(metrics => ({ ...metrics, scratchSpaceBytes, totalTime: Date.now() - then }))
         .then(shipMetrics),
     )
     .catch(err => log('ERROR', err))
@@ -440,6 +442,7 @@ function getMetricsUnit(key: keyof TerraformMetrics): StandardUnit {
     case 'pendingTotal':
       return 'Count';
     case 'refreshTime':
+    case 'totalTime':
       return 'Milliseconds';
     case 'scratchSpaceBytes':
       return 'Bytes';
