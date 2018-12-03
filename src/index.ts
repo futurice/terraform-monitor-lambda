@@ -220,13 +220,14 @@ function terraformPlan(terraformBin: string, repoPath: string) {
       let resourceCount = 0,
         pendingAdd = 0,
         pendingChange = 0,
-        pendingDestroy = 0;
+        pendingDestroy = 0,
+        pendingTotal = 0;
       const terraformStatus = res.code;
       const refreshTime = Date.now() - then;
       if (terraformStatus === 1 || config.DEBUG) log(res.stdout + res.stderr);
       if (terraformStatus === 1) {
         log(`Terraform plan failed`);
-        pendingChange = 1; // for ease of monitoring, consider Terraform failing a "pending change"
+        pendingTotal = 1; // for ease of monitoring, consider Terraform failing a "pending change"
       } else {
         log(`Terraform plan finished`);
         const refresh = / Refreshing state.../;
@@ -240,6 +241,7 @@ function terraformPlan(terraformBin: string, repoPath: string) {
             pendingDestroy = parseInt(c, 10);
           }
         });
+        pendingTotal = pendingAdd + pendingChange + pendingDestroy;
       }
       return {
         terraformStatus,
@@ -248,7 +250,7 @@ function terraformPlan(terraformBin: string, repoPath: string) {
         pendingAdd,
         pendingChange,
         pendingDestroy,
-        pendingTotal: pendingAdd + pendingChange + pendingDestroy,
+        pendingTotal,
       };
     });
 }
