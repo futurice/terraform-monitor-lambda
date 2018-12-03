@@ -217,31 +217,33 @@ function terraformPlan(terraformBin: string, repoPath: string) {
       }),
     )
     .then(res => {
-      if (res.code === 1 || config.DEBUG) log(res.stdout + res.stderr);
-      if (res.code === 1) throw new Error(`Terraform plan failed (exit code ${res.code})`);
-      log(`Terraform plan finished`);
-      return res;
-    })
-    .then(res => {
       let resourceCount = 0,
         pendingAdd = 0,
         pendingChange = 0,
         pendingDestroy = 0;
-      const refresh = / Refreshing state.../;
-      const plan = /^Plan: (\d+) to add, (\d+) to change, (\d+) to destroy./;
-      res.stdout.split('\n').forEach(line => {
-        if (line.match(refresh)) resourceCount++;
-        if (line.match(plan)) {
-          const [, a, b, c] = line.match(plan);
-          pendingAdd = parseInt(a, 10);
-          pendingChange = parseInt(b, 10);
-          pendingDestroy = parseInt(c, 10);
-        }
-      });
+      const terraformStatus = res.code;
+      const refreshTime = Date.now() - then;
+      if (terraformStatus === 1 || config.DEBUG) log(res.stdout + res.stderr);
+      if (terraformStatus === 1) {
+        log(`Terraform plan failed`);
+      } else {
+        log(`Terraform plan finished`);
+        const refresh = / Refreshing state.../;
+        const plan = /^Plan: (\d+) to add, (\d+) to change, (\d+) to destroy./;
+        res.stdout.split('\n').forEach(line => {
+          if (line.match(refresh)) resourceCount++;
+          if (line.match(plan)) {
+            const [, a, b, c] = line.match(plan);
+            pendingAdd = parseInt(a, 10);
+            pendingChange = parseInt(b, 10);
+            pendingDestroy = parseInt(c, 10);
+          }
+        });
+      }
       return {
-        terraformStatus: res.code,
+        terraformStatus,
         resourceCount,
-        refreshTime: Date.now() - then,
+        refreshTime,
         pendingAdd,
         pendingChange,
         pendingDestroy,
