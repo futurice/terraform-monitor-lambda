@@ -2,13 +2,15 @@
 
 set -e # exit on error
 PATH="$PATH:./node_modules/.bin" # allows us to run "npm binaries"
+ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )" # https://stackoverflow.com/a/246128
+cd "$ROOT_DIR" # run all commands at project root, regardless of PWD
 
 WORK_DIR="dist"
 BUILD_ZIP="$WORK_DIR/lambda.zip" # note: this has to match what's in package.json
 OK="\033[1;32mOK\033[0m"
 
 echo -n "Checking for clean working copy... "
-git diff-index HEAD
+git diff-index HEAD # npm version will fail otherwise
 echo -e "$OK"
 
 echo -n "Parsing git remote... "
