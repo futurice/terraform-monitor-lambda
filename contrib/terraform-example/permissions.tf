@@ -53,7 +53,10 @@ resource "aws_iam_policy" "this" {
         "s3:Get*",
         "s3:List*"
       ],
-      "Resource": "arn:aws:s3:::*",
+      "Resource": [
+        "arn:aws:s3:::${var.terraform_monitor_s3_bucket}",
+        "arn:aws:s3:::${var.terraform_monitor_s3_bucket}/*"
+      ],
       "Effect": "Allow"
     }
   ]
