@@ -226,6 +226,7 @@ function terraformPlan(terraformBin: string, repoPath: string) {
       if (terraformStatus === 1 || config.DEBUG) log(res.stdout + res.stderr);
       if (terraformStatus === 1) {
         log(`Terraform plan failed`);
+        pendingChange = 1; // for ease of monitoring, consider Terraform failing a "pending change"
       } else {
         log(`Terraform plan finished`);
         const refresh = / Refreshing state.../;
