@@ -2,8 +2,8 @@
 
 set -e # exit on error
 PATH="$PATH:./node_modules/.bin" # allows us to run "npm binaries"
-ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )" # https://stackoverflow.com/a/246128
-cd "$ROOT_DIR" # run all commands at project root, regardless of PWD
+SELF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )" # https://stackoverflow.com/a/246128
+cd "$SELF_DIR/.." # run all commands at project root, regardless of PWD
 
 WORK_DIR="dist"
 BUILD_ZIP="$WORK_DIR/lambda.zip" # note: this has to match what's in package.json
