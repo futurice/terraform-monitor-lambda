@@ -55,6 +55,18 @@ AWS_ACCESS_KEY_ID=ABCDEF
 AWS_REGION=eu-central-1
 ```
 
+## Alarms
+
+It can be a good idea to set up alarms for conditions such as:
+
+- Committed and deployed configuration being out of sync for a while
+- Not receiving new values from the Lambda function for a while
+
+This will depend on which metrics backend you're using.
+
+- If using CloudWatch, see [Using Amazon CloudWatch Alarms](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html).
+- If using InfluxDB, you'll have to set up alarms using a separate monitoring tool. [Grafana has decent alert support](http://docs.grafana.org/alerting/rules/), for example.
+
 ## Security
 
 Your AWS account probably contains sensitive things. And understandably, you should be cautious of using code from a stranger on the Internet, when that code can have access to your whole infrastructure.
