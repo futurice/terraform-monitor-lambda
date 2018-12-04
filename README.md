@@ -20,7 +20,7 @@ It will probably work with other VCS's & backend types with minor modifications,
 1. Log into AWS Lambda
 1. Create a new function from the release zipfile
 1. Put in [configuration](#configuration) via environment variables
-1. Grant [necessary IAM permissions](#TODO) for the Lambda user
+1. Grant [necessary IAM permissions](contrib/terraform-example/permissions.tf) for the Lambda user
 1. Add an invocation schedule (e.g. once per hour)
 
 ### Setting up with Terraform
