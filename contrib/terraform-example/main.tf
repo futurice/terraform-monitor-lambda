@@ -1,6 +1,6 @@
 locals {
   lambda_function_name = "TerraformMonitor"
-  lambda_zipfile_name  = "terraform-monitor-lambda-v1.2.0.zip" # see https://github.com/jareware/terraform-monitor-lambda/releases
+  lambda_zipfile_name  = "terraform-monitor-lambda-v1.2.0.zip" # see https://github.com/futurice/terraform-monitor-lambda/releases
 }
 
 resource "aws_lambda_function" "this" {

@@ -17,14 +17,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jareware/terraform-monitor-lambda.git"
+    "url": "git+https://github.com/futurice/terraform-monitor-lambda.git"
   },
   "author": "Jarno Rantanen <jarno@jrw.fi>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/jareware/terraform-monitor-lambda/issues"
+    "url": "https://github.com/futurice/terraform-monitor-lambda/issues"
   },
-  "homepage": "https://github.com/jareware/terraform-monitor-lambda#readme",
+  "homepage": "https://github.com/futurice/terraform-monitor-lambda#readme",
   "devDependencies": {
     "@types/aws-sdk": "^2.7.0",
     "@types/node": "^10.12.0",

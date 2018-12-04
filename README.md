@@ -16,7 +16,7 @@ It will probably work with other VCS's & backend types with minor modifications,
 
 ### Setting up manually
 
-1. Download the [latest release](https://github.com/jareware/terraform-monitor-lambda/releases)
+1. Download the [latest release](https://github.com/futurice/terraform-monitor-lambda/releases)
 1. Log into AWS Lambda
 1. Create a new function from the release zipfile
 1. Put in [configuration](#configuration) via environment variables
@@ -114,5 +114,5 @@ Creating release on GitHub... OK
 Uploading release zipfile... OK
 Cleaning up... OK
 
-New release: https://github.com/jareware/terraform-monitor-lambda/releases/tag/v1.0.0
+New release: https://github.com/futurice/terraform-monitor-lambda/releases/tag/v1.0.0
 ```
