@@ -9,8 +9,11 @@ WORK_DIR="dist"
 BUILD_ZIP="$WORK_DIR/lambda.zip" # note: this has to match what's in package.json
 OK="\033[1;32mOK\033[0m"
 
-echo -n "Checking for clean working copy... "
-git diff-index HEAD # npm version will fail otherwise
+echo -n "Checking for clean working copy... " # npm version will fail otherwise
+if [ "$(git diff-index HEAD)" != "" ]; then
+  echo -e "ERROR\n\nThere's uncommitted changes in the working copy"
+  exit 1
+fi
 echo -e "$OK"
 
 echo -n "Parsing git remote... "
