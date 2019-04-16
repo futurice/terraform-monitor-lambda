@@ -55,6 +55,13 @@ AWS_ACCESS_KEY_ID=ABCDEF
 AWS_REGION=eu-central-1
 ```
 
+In addition, you may sometimes need the following:
+
+```bash
+TERRAFORM_MONITOR_DEBUG=1 # with this flag enabled, full output from Terraform commands is written to logs
+TERRAFORM_MONITOR_ALWAYS_INIT=1 # with this flag enabled, "terraform init" will always be ran, even when the results could be cached
+```
+
 ## Alarms
 
 It can be a good idea to set up alarms for conditions such as:

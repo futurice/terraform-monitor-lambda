@@ -21,6 +21,7 @@ if (typeof lambda === 'undefined') {
 // Read config from environment and make it globally available
 const config = {
   DEBUG: !!process.env.TERRAFORM_MONITOR_DEBUG,
+  ALWAYS_INIT: !!process.env.TERRAFORM_MONITOR_ALWAYS_INIT,
   S3_BUCKET: process.env.TERRAFORM_MONITOR_S3_BUCKET || '',
   S3_KEY: process.env.TERRAFORM_MONITOR_S3_KEY || '',
   GITHUB_REPO: process.env.TERRAFORM_MONITOR_GITHUB_REPO || '',
@@ -172,7 +173,7 @@ function execProcess(
 // @see https://www.terraform.io/docs/commands/init.html
 function terraformInit(terraformBin: string, repoPath: string): Promise<unknown> {
   return Promise.resolve()
-    .then(() => checkPathExists(`${repoPath}/.terraform`))
+    .then(() => (config.ALWAYS_INIT ? Promise.reject() : checkPathExists(`${repoPath}/.terraform`)))
     .then(
       () => log('Terraform init already performed'),
       () =>
