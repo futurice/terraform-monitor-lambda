@@ -62,6 +62,20 @@ TERRAFORM_MONITOR_DEBUG=1 # with this flag enabled, full output from Terraform c
 TERRAFORM_MONITOR_ALWAYS_INIT=1 # with this flag enabled, "terraform init" will always be ran, even when the results could be cached
 ```
 
+## Graphs
+
+With the optional CloudWatch/InfluxDB support, it's simple enough to make a badge onto your wall display that goes red when there's configuration drift:
+
+![badge](doc/graphs-badge.png)
+
+...or a full-blown dashboard showing what's been going on with your Terraform infrastructure recently:
+
+![short](doc/graphs-short.png)
+
+...or over a longer time period:
+
+![short](doc/graphs-long.png)
+
 ## Alarms
 
 It can be a good idea to set up alarms for conditions such as:
